@@ -10,7 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-        "github.com/Johannekh/funtemps/Conv"
+        "github.com/Johannekh/funtemps/conv"
 )
 
 func ConvertTemperature() {
@@ -123,7 +123,7 @@ func ProcessLine(line string) string {
 		fields[len(fields)-1] = convertedField
 	}
 	if line[0:7] == "Data er" {
-		return "Data er basert pågyldig data (per 18.03.2023)(CC BY 4.0) fra Meteorologisk institutt (MET); endringen er gjort av Umit Yildirim"
+		return "Data er basert pågyldig data (per 18.03.2023)(CC BY 4.0) fra Meteorologisk institutt (MET); endringen er gjort av Johanne haakenstad"
 	} else {
 		return strings.Join(fields, ";")
 	}
