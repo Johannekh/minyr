@@ -17,7 +17,7 @@ func TestCountLines(t *testing.T) {
 			filename: "kjevik-temp-celsius-20220318-20230318.csv",
 			want:     25,
 		},
-		// add more test cases as needed
+		
 	}
 
 	for _, tt := range tests {
@@ -43,7 +43,7 @@ func TestGetAverageTemperature(t *testing.T) {
 			temperature: "celsius",
 			want:        "-0.60",
 		},
-		// add more test cases as needed
+		
 	}
 
 	for _, tt := range tests {
