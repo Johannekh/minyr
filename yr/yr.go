@@ -141,7 +141,7 @@ func convertLastField(lastField string) (string, error) {
 }
 
 func AverageTemperature() {
-	file, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
+	file, err := os.Open("../kjevik-temp-celsius-20220318-20230318.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -149,7 +149,8 @@ func AverageTemperature() {
 
 	scanner := bufio.NewScanner(file)
 
-	var lines []string
+	
+var lines []string
 
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())

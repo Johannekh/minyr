@@ -8,10 +8,12 @@ import (
 "bufio"	
 "strconv"
 "io"
+
+
 )     
 
 const expectedLines = 16756
-
+const filename = "kjevik-temp-celsius-20220318-20230318.csv"
 const convertedFilename = "kjevik-temp-fahr-20220318-20230318.csv"
 
 func LineCount(t *testing.T) {
@@ -19,7 +21,7 @@ func LineCount(t *testing.T) {
 	
 	file, err := os.Open("../kjevik-temp-fahr-20220318-20230318.csv")
 	if err != nil {
-		t.Fatalf("Kan ikke åpne filen%s: %v", file, err)
+		t.Fatalf("Kan ikke åpne filen%s: %v", convertedFilename, err)
 	}
 	defer file.Close()
 
@@ -29,11 +31,11 @@ func LineCount(t *testing.T) {
 		lineCount++
 	}
 	if err := scanner.Err(); err != nil {
-		t.Fatalf("Kan ikke scanne filen %s: %v", file, err)
+		t.Fatalf("Kan ikke scanne filen %s: %v", convertedFilename, err)
 	}
 
 	if lineCount != expectedLines {
-		t.Errorf("uforutsett antall linjer i filen %s: forventet %d, fikk %d", file, expectedLines, lineCount)
+		t.Errorf("uforutsett antall linjer i filen %s: forventet %d, fikk %d", convertedFilename, expectedLines, lineCount)
 	}
 }
 
@@ -183,7 +185,7 @@ func TestLastLineOfFile(t *testing.T) {
 	}
 
 	// Check that the last line contains the expected text
-	expectedText := "Data er basert paa gyldig data (per 18.03.2023) (CC BY 4.0) fra Meteorologisk institutt (MET); endringen er gjort av Simon Helgen"
+	expectedText := "Data er basert paa gyldig data (per 18.03.2023) (CC BY 4.0) fra Meteorologisk institutt (MET); endringen er gjort av Johanne Haakenstad"
 	if !strings.Contains(lastLine, expectedText) {
 		t.Errorf("last line of file does not contain expected text. got: %q, want substring: %q", lastLine, expectedText)
 	}
