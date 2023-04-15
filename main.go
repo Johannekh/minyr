@@ -36,87 +36,70 @@ func main() {
 				input = scanner.Text()
 				if input == "n" {
 				  break
-				} else if input != "j" {
-				  fmt.Println("Ugyldig valg. Prøv igjen.")
-				  continue
-				}
-					
+} else if input == "average" {
+    var src *os.File
+    fmt.Println("Beregner gjennomsnittstemperatur for hele perioden.")
+    src, err := os.Open("kjevik-tempfahr-20220318-20230318.csv")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer src.Close()
 
-			  }
-			  
+    var buffer []byte
+    var linebuf []byte // nil
+    buffer = make([]byte, 1)
+    bytesCount := 0
+    tempSum := 0.0
+    for {
+        _, err := src.Read(buffer)
+        if err != nil && err != io.EOF {
+            log.Fatal(err)
+        }
 
-			fmt.Println("Konverterer alle målingene gitt i grader Celsius til grader Fahrenheit.")
-			// funksjon som åpner fil, leser linjer, gjør endringer og lagrer nye linjer i en ny fil
-			// flere else-if setninger
-		} else if input == "average" {
-			var src *os.File
-			fmt.Println("Beregner gjennomsnittstemperatur for hele perioden.")
-			src, err := os.Open("kjevik-tempfahr-20220318-20230318.csv")
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer src.Close()
+        bytesCount++
+        if buffer[0] == 0x0A {
+            elementArray := strings.Split(string(linebuf), ";")
+            if len(elementArray) > 3 {
+                celsius := elementArray[3]
+                celsiusFloat, err := strconv.ParseFloat(celsius, 64)
+                if err != nil {
+                    log.Fatal(err)
+                }
+                fahr := conv.CelsiusToFarhrenheit(celsiusFloat)
+                fahrString := strconv.FormatFloat(fahr, 'f', -1, 64)
+                temp, err := strconv.ParseFloat(fahrString, 64)
+                if err != nil {
+                    log.Fatal(err)
+                }
+                tempSum += temp
+            }
+            linebuf = nil
+        } else {
+            linebuf = append(linebuf, buffer[0])
+        }
+        if err == io.EOF {
+            break
+        }
+    }
 
-			var buffer []byte
-			var linebuf []byte // nil
-			buffer = make([]byte, 1)
-			bytesCount := 0
-			tempSum := 0.0
-			for {
-				_, err := src.Read(buffer)
-				if err != nil && err != io.EOF {
-					log.Fatal(err)
-				}
-
-				bytesCount++
-				if buffer[0] == 0x0A {
-					elementArray := strings.Split(string(linebuf), ";")
-					if len(elementArray) > 3 {
-						celsius := elementArray[3]
-						fahr := conv.CelsiusToFahrenheit(celsius)
-						temp, err := strconv.ParseFloat(fahr, 64)
-						if err != nil {
-							log.Fatal(err)
-						}
-						tempSum += temp
-					}
-					linebuf = nil
-				} else {
-					linebuf = append(linebuf, buffer[0])
-				}
-				if err == io.EOF {
-					break
-				}
-			}
-
-			fmt.Println("Gjennomsnittstemperaturen er:")
-			for {
-				fmt.Println("Vil du ha temperaturen i grader Celsius eller Fahrenheit? (c/f)")
-				scanner.Scan()
-				input = scanner.Text()
-				if input == "c" {
-					avg := tempSum / float64(bytesCount)
-					fmt.Printf("%.2f grader Celsius\n", avg)
-					break
-				} else if input == "f" {
-					avg := conv.FahrenheitToCelsius(strconv.FormatFloat(tempSum/float64(bytesCount), 'f', -1, 64))
-					fmt.Printf("%.2f grader Fahrenheit\n", avg)
-					break
-				} else {
-					fmt.Println("Ugyldig valg. Prøv igjen.")
-				}
-			}
-		} else {
-			fmt.Println("Ugyldig kommando. Prøv igjen.")
-		}
-	}
+    fmt.Println("Gjennomsnittstemperaturen er:")
+    for {
+        fmt.Println("Vil du ha temperaturen i grader Celsius eller Fahrenheit? (c/f)")
+        scanner.Scan()
+        input = scanner.Text()
+        if input == "c" {
+            avg := tempSum / float64(bytesCount)
+            fmt.Printf("%.2f grader Celsius\n", avg)
+            break
+        } else if input == "f" {
+            avg := conv.FarhenheitToCelsius(tempSum / float64(bytesCount))
+            fmt.Printf("%.2f grader Fahrenheit\n", avg)
+            break
+        } else {
+            fmt.Println("Ugyldig valg. Prøv igjen.")
+        }
+    }
+} 
 }
-	for scanner.Scan() {
-	 input = scanner.Text()
-	 if input == "q" || input == "exit" {
-	 fmt.Println("exit")
-	 os.Exit(0)
-	 } else if input == "convert" {
-	 fmt.Println("Konverterer alle målingene gitt i grader Celsius til grader
-	Fahrenheit.")
-	 // funksjon som åpner fil, leser linjer, gjør endring
+}
+
