@@ -8,8 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/Johannekh/funtemps/conv"
+"github.com/uia-worker/misc/conv"
 )
 
 func main() {
@@ -102,4 +101,5 @@ func main() {
 } 
 }
 }
-
+}
+}
