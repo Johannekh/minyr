@@ -8,8 +8,9 @@ import (
     "os"
     "strconv"
     "strings"
+    "github.com/Johannekh/funtemps/conv"
+	"github.com/Johannekh/minyr/yr"
 
-    "github.com/uia-worker/misc/conv"
 )
 
 func main() {
@@ -22,30 +23,46 @@ func main() {
         if input == "exit" {
             fmt.Println("exit")
             os.Exit(0)
-        } else if input == "convert" {
-
-            _, err := os.Stat("kjevik-tempfahr-20220318-20230318.csv")
-            if err == nil {
-                src, err := os.Open("kjevik-tempfahr-20220318-20230318.csv")
-                    if err != nil {
-                    log.Fatal(err)
-                    }
-                defer src.Close()
-                fmt.Println("Fil kjevik-tempfahr-20220318-20230318.csv finnes allerede. Vil du generere filen på nytt? (j/n)")
-                scanner.Scan()
-                input = scanner.Text()
-                if input == "n" {
-                  break
-                } else if input != "j" {
-                  fmt.Println("Ugyldig valg. Prøv igjen.")
-                  continue
-                }
-                    
-
-              }
-              
-
-            fmt.Println("Konverterer alle målingene gitt i grader Celsius til grader Fahrenheit.")
+        } // Åpne filen for konvertering
+		src, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer src.Close()
+		
+		// Opprett den nye filen for konverterte data
+		dst, err := os.Create("kjevik-temp-fahrenheit-20220318-20230318.csv")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer dst.Close()
+		
+		// Lag en bufio Scanner for å lese data fra kildelinjen
+		scanner := bufio.NewScanner(src)
+		
+		// Lag en bufio Writer for å skrive konverterte data til destinasjonslinjen
+		writer := bufio.NewWriter(dst)
+		
+		// Skanne kildelinjen og konverter data
+		for scanner.Scan() {
+			line := scanner.Text()
+			convertedLine, err := yr.CelsiusToFahrenheitLine(line)
+			if err != nil {
+				log.Fatal(err)
+			}
+			_, err = fmt.Fprintln(writer, convertedLine)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+		
+		// Flush bufferen for å sikre at alt er skrevet til destinasjonslinjen
+		err = writer.Flush()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Konvertering fullført!")
+		
             // funksjon som åpner fil, leser linjer, gjør endringer og lagrer nye linjer i en ny fil
             // flere else-if setninger
         } else if input == "average" {
@@ -106,12 +123,22 @@ func main() {
 					fmt.Printf("%.2f grader Celsius\n", avg)
 					break
 				} else if response == "f" {
-					avg := conv.FarhenheitToCelsius(strconv.FormatFloat(tempSum/float64(bytesCount), 'f', -1, 64))
+					tempAvg, err := strconv.ParseFloat(strconv.FormatFloat(tempSum/float64(bytesCount), 'f', -1, 64), 64)
+				if err != nil {
+    				log.Fatal(err)
+				}
+					avg := conv.FarhenheitToCelsius(tempAvg)
+
 					fmt.Printf("%.2f grader Fahrenheit\n", avg)
 					break
 				} else {
 					fmt.Println("Ugyldig valg. Prøv igjen.")
 				}
 			}
+
+		}
+	}
+}
+
 			
 
