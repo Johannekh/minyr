@@ -20,51 +20,60 @@ func main() {
         fmt.Println("Venligst velg convert, average eller exit:")
         scanner.Scan()
         input = scanner.Text()
+
         if input == "exit" {
             fmt.Println("exit")
             os.Exit(0)
-        } // Åpne filen for konvertering
-		src, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer src.Close()
+        } else if input == "convert" { 
+            // Åpne filen for konvertering
 		
-		// Opprett den nye filen for konverterte data
-		dst, err := os.Create("kjevik-temp-fahrenheit-20220318-20230318.csv")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer dst.Close()
-		
-		// Lag en bufio Scanner for å lese data fra kildelinjen
-		scanner := bufio.NewScanner(src)
-		
-		// Lag en bufio Writer for å skrive konverterte data til destinasjonslinjen
-		writer := bufio.NewWriter(dst)
-		
-		// Skanne kildelinjen og konverter data
-		for scanner.Scan() {
-			line := scanner.Text()
-			convertedLine, err := yr.CelsiusToFahrenheitLine(line)
-			if err != nil {
-				log.Fatal(err)
+            src, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
+            if err != nil {
+                log.Fatal(err)
 			}
-			_, err = fmt.Fprintln(writer, convertedLine)
-			if err != nil {
-				log.Fatal(err)
+            defer src.Close()
+			fmt.Println("Fil kjevik-tempfahr-20220318-20230318.csv finnes allerede. Vil du generere filen på nytt? (j/n)")
+			scanner.Scan()
+			input = scanner.Text()
+			if input == "n" {
+			  break
+			
+ 			} else if input != "j" {
+			fmt.Println("Ugyldig valg. Prøv igjen.")
+				continue
+ 			}
+            
+            dst, err := os.Create("kjevik-temp-fahrenheit-20220318-20230318.csv")
+            if err != nil {
+                log.Fatal(err)
 			}
-		}
-		
-		// Flush bufferen for å sikre at alt er skrevet til destinasjonslinjen
-		err = writer.Flush()
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("Konvertering fullført!")
-		
-            // funksjon som åpner fil, leser linjer, gjør endringer og lagrer nye linjer i en ny fil
-            // flere else-if setninger
+            defer dst.Close()
+			
+            
+            scanner := bufio.NewScanner(src)
+            
+            
+            writer := bufio.NewWriter(dst)
+            
+          
+            for scanner.Scan() {
+                line := scanner.Text()
+                convertedLine, err := yr.CelsiusToFahrenheitLine(line)
+                if err != nil {
+                    log.Fatal(err)
+                }
+                _, err = fmt.Fprintln(writer, convertedLine)
+                if err != nil {
+                    log.Fatal(err)
+                }
+            }
+            
+            err = writer.Flush()
+            if err != nil {
+                log.Fatal(err)
+            }
+            fmt.Println("Konvertering fullført!")
+            
         } else if input == "average" {
             var src *os.File
             fmt.Println("Beregner gjennomsnittstemperatur for hele perioden.")
@@ -73,7 +82,8 @@ func main() {
                 log.Fatal(err)
             }
             defer src.Close()
-
+       
+ 
             var buffer []byte
             var linebuf []byte // nil
             buffer = make([]byte, 1)
@@ -133,11 +143,10 @@ func main() {
 					break
 				} else {
 					fmt.Println("Ugyldig valg. Prøv igjen.")
+					} 
 				}
 			}
-
 		}
-	}
 }
 
 			
