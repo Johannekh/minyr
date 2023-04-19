@@ -94,7 +94,7 @@ func main() {
                         if err != nil {
                             log.Fatal(err)
                         }
-                        fahr := conv.CelsiusToFarhrenheit(celsiusFloat)
+                        fahr := conv.CelsiusToFahrenheit(celsiusFloat)
                         fahrString := strconv.FormatFloat(fahr, 'f', -1, 64)
                         temp, err := strconv.ParseFloat(fahrString, 64)
                         if err != nil {
@@ -127,7 +127,7 @@ func main() {
 				if err != nil {
     				log.Fatal(err)
 				}
-					avg := conv.FarhenheitToCelsius(tempAvg)
+					avg := conv.FahrenheitToCelsius(tempAvg)
 
 					fmt.Printf("%.2f grader Fahrenheit\n", avg)
 					break
