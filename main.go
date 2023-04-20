@@ -1,153 +1,105 @@
 package main
 
 import (
-    "bufio"
-    "fmt"
-    "io"
-    "log"
-    "os"
-    "strconv"
-    "strings"
-    "github.com/Johannekh/funtemps/conv"
-	"github.com/Johannekh/minyr/yr"
+	"bufio"
+	"fmt"
+	"os"
+	"strconv"
 
+	"github.com/Johannekh/funtemps/conv"
+	"github.com/Johannekh/minyr/yr"
 )
 
 func main() {
-    var input string
-    scanner := bufio.NewScanner(os.Stdin)
-    for {
-        fmt.Println("Venligst velg convert, average eller exit:")
-        scanner.Scan()
-        input = scanner.Text()
+	reader := bufio.NewReader(os.Stdin)
 
-        if input == "exit" {
-            fmt.Println("exit")
-            os.Exit(0)
-        } else if input == "convert" { 
-            // Åpne filen for konvertering
-		
-            src, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
-            if err != nil {
-                log.Fatal(err)
-			}
-            defer src.Close()
-			fmt.Println("Fil kjevik-tempfahr-20220318-20230318.csv finnes allerede. Vil du generere filen på nytt? (j/n)")
-			scanner.Scan()
-			input = scanner.Text()
-			if input == "n" {
-			  break
-			
- 			} else if input != "j" {
-			fmt.Println("Ugyldig valg. Prøv igjen.")
-				continue
- 			}
-            
-            dst, err := os.Create("kjevik-temp-fahrenheit-20220318-20230318.csv")
-            if err != nil {
-                log.Fatal(err)
-			}
-            defer dst.Close()
-			
-            
-            scanner := bufio.NewScanner(src)
-            
-            
-            writer := bufio.NewWriter(dst)
-            
-          
-            for scanner.Scan() {
-                line := scanner.Text()
-                convertedLine, err := yr.CelsiusToFahrenheitLine(line)
-                if err != nil {
-                    log.Fatal(err)
-                }
-                _, err = fmt.Fprintln(writer, convertedLine)
-                if err != nil {
-                    log.Fatal(err)
-                }
-            }
-            
-            err = writer.Flush()
-            if err != nil {
-                log.Fatal(err)
-            }
-            fmt.Println("Konvertering fullført!")
-            
-        } else if input == "average" {
-            var src *os.File
-            fmt.Println("Beregner gjennomsnittstemperatur for hele perioden.")
-            src, err := os.Open("kjevik-tempfahr-20220318-20230318.csv")
-            if err != nil {
-                log.Fatal(err)
-            }
-            defer src.Close()
-       
- 
-            var buffer []byte
-            var linebuf []byte // nil
-            buffer = make([]byte, 1)
-            bytesCount := 0
-            tempSum := 0.0
-            for {
-                _, err := src.Read(buffer)
-                if err != nil && err != io.EOF {
-                    log.Fatal(err)
-                }
-            
-                bytesCount++
-                if buffer[0] == 0x0A {
-                    elementArray := strings.Split(string(linebuf), ";")
-                    if len(elementArray) > 3 {
-                        celsius := elementArray[3]
-                        celsiusFloat, err := strconv.ParseFloat(celsius, 64)
-                        if err != nil {
-                            log.Fatal(err)
-                        }
-                        fahr := conv.CelsiusToFahrenheit(celsiusFloat)
-                        fahrString := strconv.FormatFloat(fahr, 'f', -1, 64)
-                        temp, err := strconv.ParseFloat(fahrString, 64)
-                        if err != nil {
-                            log.Fatal(err)
-                        }
-                        tempSum += temp
-                    }
-                    linebuf = nil
-                } else {
-                    linebuf = append(linebuf, buffer[0])
-                }
-                if err == io.EOF {
-                    break               
-                }
-            }
-            
+	fmt.Println("Velkommen til minyr!")
 
-            fmt.Println("Gjennomsnittstemperaturen er:")
-            for {
-				var response string
-				fmt.Println("Vil du ha temperaturen i grader Celsius eller Fahrenheit? (c/f)")
-				scanner.Scan()
-				response = scanner.Text()
-				if response == "c" {
-					avg := tempSum / float64(bytesCount)
-					fmt.Printf("%.2f grader Celsius\n", avg)
-					break
-				} else if response == "f" {
-					tempAvg, err := strconv.ParseFloat(strconv.FormatFloat(tempSum/float64(bytesCount), 'f', -1, 64), 64)
-				if err != nil {
-    				log.Fatal(err)
-				}
-					avg := conv.FahrenheitToCelsius(tempAvg)
+	for {
+		fmt.Println("Hva vil du gjøre?")
+		fmt.Println("1. Konvertere temperaturer")
+		fmt.Println("2. Gjennomsnittstemperatur")
+		fmt.Println("3. Avslutt")
 
-					fmt.Printf("%.2f grader Fahrenheit\n", avg)
-					break
-				} else {
-					fmt.Println("Ugyldig valg. Prøv igjen.")
-					} 
-				}
-			}
+		choice, _, err := reader.ReadLine()
+		if err != nil {
+			fmt.Println("Feil ved lesing av input:", err)
+			continue
 		}
+
+		switch string(choice) {
+		case "1":
+			err := convertTemperatures(reader)
+			if err != nil {
+				fmt.Println("Feil ved konvertering:", err)
+			}
+		case "2":
+			printAverageTemperature(reader)
+		case "3":
+			fmt.Println("Ha det bra!")
+			return
+		default:
+			fmt.Println("Ugyldig valg")
+		}
+	}
 }
 
-			
+func convertTemperatures(reader *bufio.Reader) error {
+	fmt.Println("Konvertering av temperaturer pågår...")
+
+	// Les inn temperaturdata fra fil
+	temperatures, err := yr.ReadTemperaturesFromFile("kjevik-temp-celsius-20220318-20230318.csv")
+	if err != nil {
+		return fmt.Errorf("feil ved lesing av temperaturer fra fil: %v", err)
+	}
+
+	// Konverter temperaturer til Fahrenheit
+	for i, temp := range temperatures {
+		fahr := conv.CtoF(temp)
+		temperatures[i] = fahr
+	}
+
+	// Skriv temperaturer til fil
+	err = yr.WriteTemperaturesToFile("kjevik-tempfahr-20220318-20230318.csv", temperatures)
+	if err != nil {
+		return fmt.Errorf("feil ved skriving av temperaturer til fil: %v", err)
+	}
+
+	fmt.Println("Konvertering fullført!")
+	return nil
+}
+
+func printAverageTemperature(reader *bufio.Reader) {
+	fmt.Println("Hvilken temperaturskala vil du ha gjennomsnittet i? (c/f)")
+	scale, _, err := reader.ReadLine()
+	if err != nil {
+		fmt.Println("Feil ved lesing av input:", err)
+		return
+	}
+
+	// Les inn temperaturdata fra fil
+	temperatures, err := yr.ReadTemperaturesFromFile("kjevik-temp-celsius-20220318-20230318.csv")
+	if err != nil {
+		fmt.Println("Feil ved lesing av temperaturer fra fil:", err)
+		return
+	}
+
+	// Beregn gjennomsnittstemperatur
+	var sum float64
+	for _, temp := range temperatures {
+		if string(scale) == "f" {
+			temp = conv.CtoF(temp)
+		}
+		sum += temp
+	}
+	average := sum / float64(len(temperatures))
+
+	// Skriv ut gjennomsnittstemperatur
+	if string(scale) == "c" {
+		fmt.Printf("Gjennomsnittstemperaturen er %.1f grader Celsius\n", average)
+	} else {
+		fmt.Printf("Gjennomsnittstemperaturen er %.1f grader Fahrenheit\n", average)
+	}
+}
+
 

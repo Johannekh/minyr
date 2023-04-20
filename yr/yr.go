@@ -1,97 +1,134 @@
 package yr
 
 import (
-	"bufio"
-	"errors"
-	"fmt"
-	"log"
-	"os"
-	"strconv"
-	"strings"
+    "bufio"
+    "encoding/csv"
+    "fmt"
+    "io"
+    "os"
+    "strconv"
 
-	"github.com/spf13/cobra"
-	//"github.com/uia-worker/misc/conv"
+    "github.com/Johannekh/funtemps/conv"
 )
 
+// ConvertTemperatures leser en csv-fil med temperaturer i Celsius og
+// konverterer dem til Fahrenheit. De konverterte verdiene skrives til en ny
+// csv-fil med samme format som originalen.
+func ConvertTemperatures(inputFile, outputFile string) error {
+    // Åpne input-filen for lesing
+    inFile, err := os.Open(inputFile)
+    if err != nil {
+        return fmt.Errorf("failed to open input file: %w", err)
+    }
+    defer inFile.Close()
 
-func CelsiusToFahrenheitFile(filename string) ([]string, error) {
-	file, err := os.Open(filename)
+    // Åpne output-filen for skriving
+    outFile, err := os.Create(outputFile)
+    if err != nil {
+        return fmt.Errorf("failed to create output file: %w", err)
+    }
+    defer outFile.Close()
+
+    // Opprett en CSV-reader for input-filen
+    reader := csv.NewReader(bufio.NewReader(inFile))
+    reader.Comma = ';'
+
+    // Opprett en CSV-writer for output-filen
+    writer := csv.NewWriter(bufio.NewWriter(outFile))
+    writer.Comma = ';'
+    defer writer.Flush()
+
+    // Les hver linje i input-filen og konverter temperaturene til Fahrenheit
+    isFirstLine := true
+    for {
+        record, err := reader.Read()
+        if err == io.EOF {
+            break
+        }
+        if err != nil {
+            return fmt.Errorf("failed to read input file: %w", err)
+        }
+
+        // Skriv den første linjen uendret til output-filen
+        if isFirstLine {
+            err = writer.Write(record)
+            if err != nil {
+                return fmt.Errorf("failed to write first line to output file: %w", err)
+            }
+            isFirstLine = false
+            continue
+        }
+
+        // Konverter temperaturen til Fahrenheit
+        tempCelsius, err := strconv.ParseFloat(record[1], 64)
+        if err != nil {
+            return fmt.Errorf("failed to parse temperature from input file: %w", err)
+        }
+        tempFahrenheit := conv.CelsiusToFahrenheit(tempCelsius)
+
+        // Skriv konvertert linje til output-filen
+        record[1] = strconv.FormatFloat(tempFahrenheit, 'f', 1, 64)
+        err = writer.Write(record)
+        if err != nil {
+            return fmt.Errorf("failed to write converted line to output file: %w", err)
+        }
+    }
+
+    // Skriv siste linjen til output-filen
+    lastLine := fmt.Sprintf("Data er basert på gyldig data (per %s) (CC BY 4.0) fra Meteorologisk institutt (MET);endringen er gjort av Johanne Haakenstad", "18.03.2023")
+    err = writer.Write([]string{lastLine})
+    if err != nil {
+        return fmt.Errorf("failed to write last line to output file: %w", err)
+    }
+
+    return nil
+}
+
+// CalculateAverageTemperature beregner gjennomsnittstemperaturen fra en csv-fil
+// med temperaturer i Celsius. Gjennomsnittstemperaturen kan returneres i
+// Celsius eller Fahrenheit.
+func CalculateAverageTemperature(inputFile string, outputUnit string) (float64, error) {
+    // Åpne input-filen for lesing
+   
+file, err := os.Open(inputFile)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	var lines []string
-	for scanner.Scan() {
-		line := scanner.Text()
-		convertedLine, err := CelsiusToFahrenheitLine(line)
-		if err != nil {
-			return nil, err
+	// Les temperaturene fra filen og legg dem til i en slice
+	var temperatures []float64
+	reader := csv.NewReader(file)
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
 		}
-		lines = append(lines, convertedLine)
+		if err != nil {
+			return 0, err
+		}
+
+		temp, err := strconv.ParseFloat(strings.Replace(record[1], ",", ".", -1), 64)
+		if err != nil {
+			return 0, err
+		}
+		temperatures = append(temperatures, temp)
 	}
 
-	if err := scanner.Err(); err != nil {
-		return nil, err
+	// Beregn gjennomsnittstemperaturen i Celsius
+	var avgCelsius float64
+	for _, t := range temperatures {
+		avgCelsius += t
+	}
+	avgCelsius /= float64(len(temperatures))
+
+	// Konverter gjennomsnittstemperaturen til Fahrenheit hvis ønskelig
+	var avgTemp float64
+	if outputUnit == "c" {
+		avgTemp = avgCelsius
+	} else {
+		avgTemp = conv.CelsiusToFahrenheit(avgCelsius)
 	}
 
-	return lines, nil
+	return avgTemp, nil
 }
-
-func CelsiusToFahrenheitLine(line string) (string, error) {
-	fields := strings.Split(line, ";")
-	if len(fields) != 3 {
-		return "", errors.New("invalid input line format")
-	}
-
-	celsius, err := strconv.ParseFloat(fields[2], 64)
-	if err != nil {
-		return "", err
-	}
-
-	fahrenheit := (celsius * 9 / 5) + 32
-
-	return fmt.Sprintf("%s;%s;%.1f", fields[0], fields[1], fahrenheit), nil
-}
-
-func main() {
-	var cmd = &cobra.Command{
-		Use:   "minyr",
-		Short: "A brief description of your application",
-		Long:  `A longer description that spans multiple lines and likely contains examples and usage of using your application.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			inputFilename := "kjevik-temp-celsius-20220318-20230318.csv"
-			outputFilename := "kjevik-tempfahr-20220318-20230318.csv"
-
-			lines, err := CelsiusToFahrenheitFile(inputFilename)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			outputFile, err := os.Create(outputFilename)
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer outputFile.Close()
-
-			writer := bufio.NewWriter(outputFile)
-			for i, line := range lines {
-				if i == 0 {
-					writer.WriteString(line + "\n")
-				} else {
-					writer.WriteString(line + "\n")
-				}
-			}
-
-			writer.WriteString("Data er basert på gyldig data (per 18.03.2023) (CC BY 4.0) fra Meteorologisk institutt (MET);endringen er gjort av Johanne Haakenstad")
-			writer.Flush()
-		},
-	}
-
-	if err := cmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
