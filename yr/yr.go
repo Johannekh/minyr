@@ -28,7 +28,7 @@ antall++
 return antall
 }
 
-func KonverteringAvLinjer() {
+func Konvertering() {
 	regenererFil := SjekkOmFahrFilEksisterer()
 	if !regenererFil {
 	return
@@ -98,7 +98,7 @@ konvertertLinje := strings.Join(elementer, ";")
 return konvertertLinje
 }
 
-func GjennomsnittsBeregningCelsius() float64 {
+func GjennomsnittAvCelsius() float64 {
 fil, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
 if err != nil {
 log.Fatal(err)
@@ -129,7 +129,7 @@ for scanner.Scan() {
 	return 0
 }
 
-func GjennomsnittsBeregningFahr() float64 {
+func GjennomsnittAvFahr() float64 {
 fil, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
 if err != nil {
 	log.Fatal(err)

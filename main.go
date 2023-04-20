@@ -28,7 +28,7 @@ for {
 	input = scanner.Text()
 	switch input {
 	case "convert":
-	yr.KonverteringAvLinjer()
+	yr.Konvertering()
 	case "average":
 	fmt.Println("Velg enhet for gjennomsnittstemperatur (c/f):")
 	if !scanner.Scan() {
@@ -38,9 +38,9 @@ for {
 	enhet := scanner.Text()
 	switch enhet {
 	case "c":
-	yr.GjennomsnittsBeregningCelsius()
+	yr.GjennomsnittAvCelsius()
 	case "f":
-	yr.GjennomsnittsBeregningFahr()
+	yr.GjennomsnittAvFahr()
 	default:
 	fmt.Println("Ugyldig valg.")
 
