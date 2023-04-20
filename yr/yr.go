@@ -1,134 +1,190 @@
 package yr
 
-import (
-    "bufio"
-    "encoding/csv"
-    "fmt"
-    "io"
-    "os"
-    "strconv"
 
-    "github.com/Johannekh/funtemps/conv"
+import (
+"github.com/Johannekh/funtemps/conv"
+        "strconv"
+	"bufio"
+        "strings"
+        "os"
+        "fmt"
+	"log"
 )
 
-// ConvertTemperatures leser en csv-fil med temperaturer i Celsius og
-// konverterer dem til Fahrenheit. De konverterte verdiene skrives til en ny
-// csv-fil med samme format som originalen.
-func ConvertTemperatures(inputFile, outputFile string) error {
-    // Åpne input-filen for lesing
-    inFile, err := os.Open(inputFile)
-    if err != nil {
-        return fmt.Errorf("failed to open input file: %w", err)
-    }
-    defer inFile.Close()
+func LesAntallLinjerFil(filename string) int{
+src, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
+if err != nil {
 
-    // Åpne output-filen for skriving
-    outFile, err := os.Create(outputFile)
-    if err != nil {
-        return fmt.Errorf("failed to create output file: %w", err)
-    }
-    defer outFile.Close()
+        log.Fatal(err)
 
-    // Opprett en CSV-reader for input-filen
-    reader := csv.NewReader(bufio.NewReader(inFile))
-    reader.Comma = ';'
-
-    // Opprett en CSV-writer for output-filen
-    writer := csv.NewWriter(bufio.NewWriter(outFile))
-    writer.Comma = ';'
-    defer writer.Flush()
-
-    // Les hver linje i input-filen og konverter temperaturene til Fahrenheit
-    isFirstLine := true
-    for {
-        record, err := reader.Read()
-        if err == io.EOF {
-            break
-        }
-        if err != nil {
-            return fmt.Errorf("failed to read input file: %w", err)
-        }
-
-        // Skriv den første linjen uendret til output-filen
-        if isFirstLine {
-            err = writer.Write(record)
-            if err != nil {
-                return fmt.Errorf("failed to write first line to output file: %w", err)
-            }
-            isFirstLine = false
-            continue
-        }
-
-        // Konverter temperaturen til Fahrenheit
-        tempCelsius, err := strconv.ParseFloat(record[1], 64)
-        if err != nil {
-            return fmt.Errorf("failed to parse temperature from input file: %w", err)
-        }
-        tempFahrenheit := conv.CelsiusToFahrenheit(tempCelsius)
-
-        // Skriv konvertert linje til output-filen
-        record[1] = strconv.FormatFloat(tempFahrenheit, 'f', 1, 64)
-        err = writer.Write(record)
-        if err != nil {
-            return fmt.Errorf("failed to write converted line to output file: %w", err)
-        }
-    }
-
-    // Skriv siste linjen til output-filen
-    lastLine := fmt.Sprintf("Data er basert på gyldig data (per %s) (CC BY 4.0) fra Meteorologisk institutt (MET);endringen er gjort av Johanne Haakenstad", "18.03.2023")
-    err = writer.Write([]string{lastLine})
-    if err != nil {
-        return fmt.Errorf("failed to write last line to output file: %w", err)
-    }
-
-    return nil
+}
+defer src.Close()
+scanner := bufio.NewScanner(src)
+antall := 0
+for scanner.Scan() {
+antall++
 }
 
-// CalculateAverageTemperature beregner gjennomsnittstemperaturen fra en csv-fil
-// med temperaturer i Celsius. Gjennomsnittstemperaturen kan returneres i
-// Celsius eller Fahrenheit.
-func CalculateAverageTemperature(inputFile string, outputUnit string) (float64, error) {
-    // Åpne input-filen for lesing
-   
-file, err := os.Open(inputFile)
-	if err != nil {
-		return 0, err
-	}
-	defer file.Close()
+return antall
+}
 
-	// Les temperaturene fra filen og legg dem til i en slice
-	var temperatures []float64
-	reader := csv.NewReader(file)
-	for {
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
-		}
+func KonverteringAvLinjer() {
+	regenererFil := SjekkOmFahrFilEksisterer()
+	if !regenererFil {
+	return
+	}
+
+//Apner input filen
+inputFil, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
+if err != nil {
+	log.Fatal(err)
+}
+defer inputFil.Close()
+//Lager output filen
+outputFil, err := os.Create("kjevik-temp-fahr-20220318-20230318.csv")
+if err != nil {
+	log.Fatal(err)
+}
+defer outputFil.Close()
+outputWriter := bufio.NewWriter(outputFil)
+inputScanner := bufio.NewScanner(inputFil)
+
+for inputScanner.Scan() {
+linje := inputScanner.Text()
+konvertertLinje := ProsesserLinjer(linje)
+_, err := outputWriter.WriteString(konvertertLinje + "\n")
+if err != nil {
+
+	log.Fatal(err)
+
+}
+
+}
+
+err = outputWriter.Flush()
+if err != nil {
+	log.Fatal(err)
+}
+fmt.Println("Konverteringen er ferdig")
+
+
+}
+
+
+func ProsesserLinjer(linje string) string {
+if strings.Contains(linje, "Navn;Stasjon;Tid(norsk normaltid);Lufttemperatur") {
+return linje
+}
+
+
+
+if strings.Contains(linje, "Data er gyldig per 18.03.2023 (CC BY 4.0), Meteorologisk institutt (MET);;;") {
+linje = strings.Replace(linje, "Data er gyldig per 18.03.2023 (CC BY 4.0), Meteorologisk institutt (MET);;;", "Data er basert på gyldig data (per 18.03.2023) (CC BY 4.0) fra Meteorologisk institutt (MET); endringen er gjort av Johanne Haakenstad", 1)
+
+return linje
+
+}
+elementer := strings.Split(linje, ";")
+celsiusStr := elementer[len(elementer)-1]
+celsius, err := strconv.ParseFloat(celsiusStr, 64)
+if err != nil {
+log.Fatal(err)
+}
+
+
+fahrenheit := conv.CelsiusToFahrenheit(celsius)
+elementer[len(elementer)-1] = fmt.Sprintf("%.1f", fahrenheit)
+konvertertLinje := strings.Join(elementer, ";")
+return konvertertLinje
+}
+
+func GjennomsnittsBeregningCelsius() float64 {
+fil, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
+if err != nil {
+log.Fatal(err)
+}
+defer fil.Close()
+
+var adderteTemperaturer float64
+var antallTemperaturer int
+
+scanner := bufio.NewScanner(fil)
+for scanner.Scan() {
+	linje := scanner.Text()
+	elementer := strings.Split(linje, ";")
+	if len(elementer) >= 4 {
+	temperatur, err := strconv.ParseFloat(elementer[3], 64)
+	if err == nil {
+	adderteTemperaturer += temperatur
+	antallTemperaturer++
+}
+}
+}
+
+	if antallTemperaturer > 0 {
+	gjennomsnittsTemperatur :=  adderteTemperaturer / float64(antallTemperaturer)
+	fmt.Printf ("Gjennomsnittstemperaturen i celsius : %.2f\n", gjennomsnittsTemperatur)
+
+}
+	return 0
+}
+
+func GjennomsnittsBeregningFahr() float64 {
+fil, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
+if err != nil {
+	log.Fatal(err)
+}
+defer fil.Close()
+
+
+var adderteTemperaturer float64
+var antallTemperaturer int
+scanner := bufio.NewScanner(fil)
+for scanner.Scan() {
+linje := scanner.Text()
+elementer := strings.Split(linje, ";")
+if len (elementer) >= 4 {
+temperatur, err := strconv.ParseFloat(elementer[3], 64)
+if err == nil {
+
+	adderteTemperaturer += temperatur
+	antallTemperaturer++
+}
+}
+}
+
+if antallTemperaturer > 0 {
+	gjennomsnittsTemperatur := adderteTemperaturer / float64(antallTemperaturer)
+	fahrenheitGjennomsnitt := conv.CelsiusToFahrenheit(gjennomsnittsTemperatur)
+	fmt.Printf ("Gjennomsnittstemperaturen i fahrenhei : %.2f\n", fahrenheitGjennomsnitt)
+	return fahrenheitGjennomsnitt
+}
+return 0
+
+}
+
+func SjekkOmFahrFilEksisterer() bool {
+if _, err := os.Stat("kjevik-temp-fahr-20220318-20230318.csv"); err == nil {
+	fmt.Println("Filen eksisterer allerede, generere en ny fil? (j/n)")
+	var regenerer string
+	fmt.Scanln(&regenerer)
+	if strings.ToLower(regenerer) == "j" || strings.ToLower(regenerer) == "J" {
+	err := os.Remove("kjevik-temp-fahr-20220318-20230318.csv")
 		if err != nil {
-			return 0, err
-		}
+			log.Fatal(err)
+			}
+	return true
+	} else if strings.ToLower(regenerer) == "n" || strings.ToLower(regenerer) == "N" {
+		fmt.Println("Avbrutt")
 
-		temp, err := strconv.ParseFloat(strings.Replace(record[1], ",", ".", -1), 64)
-		if err != nil {
-			return 0, err
-		}
-		temperatures = append(temperatures, temp)
-	}
-
-	// Beregn gjennomsnittstemperaturen i Celsius
-	var avgCelsius float64
-	for _, t := range temperatures {
-		avgCelsius += t
-	}
-	avgCelsius /= float64(len(temperatures))
-
-	// Konverter gjennomsnittstemperaturen til Fahrenheit hvis ønskelig
-	var avgTemp float64
-	if outputUnit == "c" {
-		avgTemp = avgCelsius
+	return false
 	} else {
-		avgTemp = conv.CelsiusToFahrenheit(avgCelsius)
-	}
 
-	return avgTemp, nil
-}
+	fmt.Println("Ugyldig svar. Skriv 'j' for ja eller 'n' for nei.")
+
+	return false
+	}
+	}
+	return true
+
+	}
